@@ -9,7 +9,7 @@ def P_deltaR(delta_R, p_tau, is_tau_1):
     npy = np.load("/global/homes/b/baihong/workdir/MMC/histogram.npz", allow_pickle=True)
     h1 = npy["h1"]
     h2 = npy["h2"]
-    x1 = npy["x1"]
+    x1 = npy["x1"]#表示所有delta_R的横轴值
     y1 = npy["y1"]
     x2 = npy["x2"]
     y2 = npy["y2"]
@@ -21,7 +21,7 @@ def P_deltaR(delta_R, p_tau, is_tau_1):
         if ix < 0 or ix >= H.shape[0] or iy < 0 or iy >= H.shape[1]:
             return 0.0
         # 计算该 bin 的面积
-        bin_area = (xedges[ix+1] - xedges[ix]) * (yedges[iy+1] - yedges[iy])
+        bin_area = (xedges[ix+1] - xedges[ix]) * (yedges[iy+1] - yedges[iy])#如果bin是均匀划分的话，可以不用这样写；但有可能不是，所以防御性编程
         # 返回该 bin 的概率值
         return H[ix, iy] * bin_area
     
@@ -69,8 +69,8 @@ def missing_ET_equations(thetas, phi_mis1, phi_mis2, Etx, Ety, vis_params1, vis_
     E_vis1 = np.sqrt(p_vis1**2 + m_vis1**2)
     E_vis2 = np.sqrt(p_vis2**2 + m_vis2**2)
     
-    p_mis1 = get_p_mis(m_vis1, p_vis1, E_vis1, theta_vis1, phi_vis1, theta_mis1, phi_mis1)
-    p_mis2 = get_p_mis(m_vis2, p_vis2, E_vis2, theta_vis2, phi_vis2, theta_mis2, phi_mis2)
+    p_mis1 = get_p_mis(m_vis1, p_vis1, E_vis1, theta_vis1, phi_vis1, theta_mis1, phi_mis1)#哦，相当于四个方程，先手工把后两个方程的约束代入到前两个方程里用掉了
+    p_mis2 = get_p_mis(m_vis2, p_vis2, E_vis2, theta_vis2, phi_vis2, theta_mis2, phi_mis2)#这里用了方程1，2，所以fsolve(missing_xxx时实际上是四个方程一起解)，把p_mis用theta_mis表示了
     if p_mis1 is None or p_mis2 is None:
         return [1e6, 1e6]
     ETx_calc = p_mis1 * np.sin(theta_mis1) * np.cos(phi_mis1) + \
@@ -155,7 +155,7 @@ def MMC_reconstruction(Etx, Ety, vis_params1, vis_params2, phi_grid_points=50):
     phi_vals = np.linspace(0, 2*np.pi, phi_grid_points, endpoint=False)
     for phi_mis1 in phi_vals:
         for phi_mis2 in phi_vals:
-            sol = compute_neutrino_four_momenta(phi_mis1, phi_mis2, Etx, Ety, vis_params1, vis_params2)
+            sol = compute_neutrino_four_momenta(phi_mis1, phi_mis2, Etx, Ety, vis_params1, vis_params2)#这个函数实际上就是fsolve()，只不过解的是theta，所以还要化成p_mis
             if sol is None:
                 continue
             nu1, nu2, (theta_mis1, theta_mis2), (p_mis1, p_mis2) = sol
@@ -197,7 +197,7 @@ def MMC_reconstruction(Etx, Ety, vis_params1, vis_params2, phi_grid_points=50):
             L_event = event_likelihood(delta_R1, p_tau1, delta_R2, p_tau2)
             weight = np.exp(-L_event)
             results.append((phi_mis1, phi_mis2, MtauTau, weight, nu1, nu2))
-            if weight > best_weight:
+            if weight > best_weight:#这一步是错的，应该是加权直方图
                 best_weight = weight
                 best_solution = (phi_mis1, phi_mis2, nu1, nu2, theta_mis1, theta_mis2, p_mis1, p_mis2)
                 best_MtauTau = MtauTau

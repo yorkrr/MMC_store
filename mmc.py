@@ -1,17 +1,17 @@
 import numpy as np
 from scipy.optimize import minimize
 import vector
-
+#这个是错的，不是真MMC，而是仅用theta共线假设，遍历所有phi，计算对应的p_T与实验测得的met最接近的就是
 M_TAU = 1.777  # τ lepton mass in GeV
 
 # Function to compute neutrino four-momentum given visible τ decay products and assumed neutrino direction
-def vis_to_neutrino(vis, nu_phi, nu_theta):
+def vis_to_neutrino(vis, nu_phi, nu_theta):#这里为什么中微子动量方向假想好了，哦因为之后还能求重建的动量与缺失横动量的残差
     p_vis = np.sqrt(vis.px**2 + vis.py**2 + vis.pz**2)
     m_vis = np.sqrt(np.max(vis.E**2 - p_vis**2, 0))
 
     cos_theta = (vis.px * np.sin(nu_theta) * np.cos(nu_phi) +
                  vis.py * np.sin(nu_theta) * np.sin(nu_phi) +
-                 vis.pz * np.cos(nu_theta)) / p_vis
+                 vis.pz * np.cos(nu_theta)) / p_vis#cos_theta 表示 可见τ衰变产物的动量方向 与 假设的中微子方向 之间夹角的余弦值
 
     denominator = 2 * (vis.E - p_vis * cos_theta)
     p_nu_mag = np.where(abs(denominator) < 1e-6, 0, (M_TAU**2 - m_vis**2) / denominator)
@@ -27,7 +27,7 @@ def vis_to_neutrino(vis, nu_phi, nu_theta):
 # Likelihood function to minimize
 def likelihood(params, vis1, vis2, met):
     nu1_phi, nu2_phi = params
-    nu1_theta = np.arccos(vis1.py / np.sqrt(vis1.px**2 + vis1.py**2 + vis1.pz**2))
+    nu1_theta = np.arccos(vis1.py / np.sqrt(vis1.px**2 + vis1.py**2 + vis1.pz**2))#nu_theta直接假设成和vis共线的？
     nu2_theta = np.arccos(vis2.py / np.sqrt(vis2.px**2 + vis2.py**2 + vis2.pz**2))
 
     nu1 = vis_to_neutrino(vis1, nu1_phi, nu1_theta)
